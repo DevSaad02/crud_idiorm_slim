@@ -9,7 +9,9 @@ use Psr\Log\LoggerInterface;
 use Twig\Loader\FilesystemLoader;
 use Monolog\Handler\StreamHandler;
 use Monolog\Processor\UidProcessor;
+use Monolog\Formatter\LineFormatter;
 use Psr\Container\ContainerInterface;
+use Monolog\Handler\RotatingFileHandler;
 use App\Application\Settings\SettingsInterface;
 
 return function (ContainerBuilder $containerBuilder) {
@@ -23,7 +25,15 @@ return function (ContainerBuilder $containerBuilder) {
             $processor = new UidProcessor();
             $logger->pushProcessor($processor);
 
-            $handler = new StreamHandler($loggerSettings['path'], $loggerSettings['level']);
+             // Use RotatingFileHandler for log rotation
+            // This handler creates a new log file each day and keeps up to 30 log files
+            $handler = new RotatingFileHandler($loggerSettings['path'], 30, $loggerSettings['level']);
+
+            // Create a custom formatter with a readable date format
+            $dateFormat = "d M, Y H:i:s";
+            $output = "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n";
+            $formatter = new LineFormatter($output, $dateFormat);
+            $handler->setFormatter($formatter);
             $logger->pushHandler($handler);
 
             return $logger;
